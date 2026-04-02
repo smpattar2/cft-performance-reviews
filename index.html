@@ -414,18 +414,65 @@
         ];
         
         // ===== AUTH SYSTEM =====
-        const USERS = [
-            { email: 'chetan@craftech360.com', password: 'cft123', name: 'Chetan', role: 'employee', tlId: 'suman@craftech360.com' },
-            { email: 'harsh@craftech360.com', password: 'cft123', name: 'Harsh', role: 'employee', tlId: 'suman@craftech360.com' },
-            { email: 'kotresh@craftech360.com', password: 'cft123', name: 'Kotresh', role: 'employee', tlId: 'suman@craftech360.com' },
-            { email: 'karthikeya@craftech360.com', password: 'cft123', name: 'Karthikeya', role: 'employee', tlId: 'abilash@craftech360.com' },
-            { email: 'rahul@craftech360.com', password: 'cft123', name: 'Rahul', role: 'employee', tlId: 'abilash@craftech360.com' },
-            { email: 'suman@craftech360.com', password: 'cft123', name: 'Suman N (HR)', role: 'tl', team: ['chetan', 'harsh', 'kotresh'] },
-            { email: 'abilash@craftech360.com', password: 'cft123', name: 'Abilash S (CTO)', role: 'tl', team: ['karthikeya', 'rahul'] },
-            { email: 'hr@craftech360.com', password: 'cft123', name: 'HR Admin', role: 'admin' },
-            { email: 'pattar@craftech360.com', password: 'cft123', name: 'Shrishail Pattar', role: 'admin' },
-            { email: 'ravi@craftech360.com', password: 'cft123', name: 'Ravi Kumar', role: 'admin' }
-        ];
+        // Try to load employees from localStorage (Employee Master), fallback to hardcoded
+        let USERS = [];
+        
+        function loadUsersFromStorage() {
+            const stored = localStorage.getItem('cft_employees');
+            if (stored) {
+                const emps = JSON.parse(stored);
+                USERS = emps.map(e => ({
+                    email: e.email,
+                    password: e.password || 'cft123',
+                    name: e.name,
+                    role: e.role === 'admin' ? 'admin' : (e.tl ? 'tl' : 'employee'),
+                    tlId: e.tl || '',
+                    hod: e.hod
+                }));
+                
+                // Add TLs as separate entries
+                const tls = [...new Set(emps.filter(e => e.tl).map(e => e.tl))];
+                tls.forEach(tlEmail => {
+                    const tlEmp = emps.find(e => e.email === tlEmail);
+                    if (tlEmp && !USERS.find(u => u.email === tlEmail)) {
+                        USERS.push({
+                            email: tlEmail,
+                            password: tlEmp.password || 'cft123',
+                            name: tlEmp.name,
+                            role: 'tl',
+                            team: emps.filter(e => e.tl === tlEmail).map(e => e.email)
+                        });
+                    }
+                });
+                
+                // Add admins
+                const admins = ['hr@craftech360.com', 'pattar@craftech360.com', 'ravi@craftech360.com'];
+                admins.forEach(adminEmail => {
+                    if (!USERS.find(u => u.email === adminEmail)) {
+                        const adminEmp = emps.find(e => e.email === adminEmail);
+                        USERS.push({
+                            email: adminEmail,
+                            password: adminEmp?.password || 'cft123',
+                            name: adminEmp?.name || adminEmail.split('@')[0],
+                            role: 'admin'
+                        });
+                    }
+                });
+            } else {
+                // Fallback hardcoded users
+                USERS = [
+                    { email: 'chetan@craftech360.com', password: 'cft123', name: 'Chetan', role: 'employee', tlId: 'suman@craftech360.com' },
+                    { email: 'harsh@craftech360.com', password: 'cft123', name: 'Harsh', role: 'employee', tlId: 'suman@craftech360.com' },
+                    { email: 'kotresh@craftech360.com', password: 'cft123', name: 'Kotresh', role: 'employee', tlId: 'suman@craftech360.com' },
+                    { email: 'suman@craftech360.com', password: 'cft123', name: 'Suman N (HR)', role: 'tl', team: ['chetan@craftech360.com', 'harsh@craftech360.com', 'kotresh@craftech360.com'] },
+                    { email: 'hr@craftech360.com', password: 'cft123', name: 'HR Admin', role: 'admin' },
+                    { email: 'pattar@craftech360.com', password: 'cft123', name: 'Shrishail Pattar', role: 'admin' },
+                    { email: 'ravi@craftech360.com', password: 'cft123', name: 'Ravi Kumar', role: 'admin' }
+                ];
+            }
+        }
+        
+        loadUsersFromStorage();
         
         let currentUser = null;
         
@@ -480,13 +527,34 @@
                              currentUser.role === 'tl' ? '<span class="role-badge role-tl">TEAM LEAD</span>' : 
                              '<span class="role-badge role-employee">EMPLOYEE</span>';
             document.getElementById('currentUser').innerHTML = `${currentUser.name}${roleBadge}`;
-            selectRole(currentUser.role);
             loadEmployeesList();
+            
+            // For employees, pre-fill their details and switch to review tab
             if (currentUser.role === 'employee') {
-                setTimeout(() => {
-                    document.getElementById('employeeSelect').value = currentUser.email;
-                    loadEmployeeReview();
-                }, 500);
+                document.getElementById('employeeName').value = currentUser.name;
+                document.getElementById('employeeId').value = currentUser.email.split('@')[0];
+                document.getElementById('department').value = 'Software';
+                
+                // Auto-switch to review form view
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.getElementById('reviewView').classList.add('active');
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                
+                // Show employee card, hide select
+                document.getElementById('employeeSelectDiv').style.display = 'none';
+                document.getElementById('employeeDetailsCard').style.display = 'block';
+                
+                // Force render questions
+                renderQuestions();
+                renderRatingGrid();
+            } else {
+                // For TL/Admin
+                currentRole = currentUser.role;
+                document.getElementById('employeeSelectDiv').style.display = 'block';
+                document.getElementById('employeeDetailsCard').style.display = 'none';
+                renderQuestions();
+                renderRatingGrid();
             }
         }
         

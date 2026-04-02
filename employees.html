@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Master - CFT360</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; color: #1e293b; }
+        
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        .header { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 24px 30px; border-radius: 12px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 24px; }
+        
+        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .card h2 { font-size: 18px; margin-bottom: 16px; color: #1e40af; }
+        
+        .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 13px; color: #374151; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #3b82f6; }
+        
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #1e40af; color: white; }
+        .btn-primary:hover { background: #1e3a8a; }
+        .btn-secondary { background: #64748b; color: white; }
+        .btn-danger { background: #dc2626; color: white; }
+        .btn-success { background: #16a34a; color: white; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+        th { background: #1e40af; color: white; font-weight: 600; }
+        th:first-child { border-radius: 8px 0 0 0; }
+        th:last-child { border-radius: 0 8px 0 0; }
+        tr:hover { background: #f8fafc; }
+        
+        .status-active { background: #dcfce7; color: #16a34a; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .status-inactive { background: #f1f5f9; color: #64748b; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        
+        .action-btn { padding: 6px 12px; font-size: 12px; margin-right: 4px; }
+        
+        .search-bar { display: flex; gap: 12px; margin-bottom: 20px; }
+        .search-bar input { flex: 1; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header h3 { color: #1e40af; }
+        .close-modal { background: none; border: none; font-size: 24px; cursor: pointer; }
+        
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #16a34a; color: white; padding: 16px 24px; border-radius: 8px; display: none; }
+        .toast.show { display: block; }
+        
+        .checkbox-list { max-height: 150px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; }
+        .checkbox-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+        .checkbox-item input { width: auto; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; text-align: center; }
+        .stat-value { font-size: 28px; font-weight: bold; color: #1e40af; }
+        .stat-label { color: #64748b; font-size: 13px; margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>👥 Employee Master & Review Mapping</h1>
+                <p style="opacity: 0.8; font-size: 14px; margin-top: 4px;">CFT360 Performance Review System</p>
+            </div>
+            <div>
+                <a href="index.html" class="btn btn-secondary" style="text-decoration: none;">← Back to Review</a>
+            </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalEmp">0</div>
+                <div class="stat-label">Total Employees</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="activeEmp">0</div>
+                <div class="stat-label">Active</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalTL">0</div>
+                <div class="stat-label">Team Leads</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalAdmin">0</div>
+                <div class="stat-label">Admins</div>
+            </div>
+        </div>
+        
+        <!-- Add Employee Form -->
+        <div class="card">
+            <h2>➕ Add / Edit Employee</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Employee Name *</label>
+                    <input type="text" id="empName" placeholder="Full Name">
+                </div>
+                <div class="form-group">
+                    <label>Employee ID *</label>
+                    <input type="text" id="empId" placeholder="e.g., CFT001">
+                </div>
+                <div class="form-group">
+                    <label>Department *</label>
+                    <select id="empDept">
+                        <option value="">Select</option>
+                        <option value="Software">Software</option>
+                        <option value="Embedded">Embedded</option>
+                        <option value="Creative">Creative</option>
+                        <option value="Business Development">Business Development</option>
+                        <option value="Operations">Operations</option>
+                        <option value="HR & Admin">HR & Admin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Designation</label>
+                    <input type="text" id="empDesig" placeholder="e.g., Senior Developer">
+                </div>
+                <div class="form-group">
+                    <label>Official Email *</label>
+                    <input type="email" id="empEmail" placeholder="name@craftech360.com">
+                </div>
+                <div class="form-group">
+                    <label>Password (for login)</label>
+                    <input type="text" id="empPassword" placeholder="cft123" value="cft123">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="empStatus">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Date of Joining</label>
+                    <input type="date" id="empDOJ">
+                </div>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Reporting Manager (TL) - Single</label>
+                    <select id="empTL">
+                        <option value="">Select TL</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>HOD / Admin Access</label>
+                    <select id="empHOD">
+                        <option value="">Select HOD</option>
+                        <option value="hr@craftech360.com">HR Admin</option>
+                        <option value="pattar@craftech360.com">Shrishail Pattar</option>
+                        <option value="ravi@craftech360.com">Ravi Kumar</option>
+                        <option value="abilash@craftech360.com">Abilash S (CTO)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button class="btn btn-primary" onclick="saveEmployee()">💾 Save Employee</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Employee List -->
+        <div class="card">
+            <h2>📋 All Employees</h2>
+            <div class="search-bar">
+                <input type="text" id="searchEmp" placeholder="Search by name, email, department..." onkeyup="filterEmployees()">
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Designation</th>
+                        <th>TL / Reviewer</th>
+                        <th>HOD</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="employeeTable">
+                    <tr><td colspan="9" style="text-align:center;color:#64748b;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div id="toast" class="toast">✓ Saved successfully!</div>
+    
+    <script>
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxQc5bTsAo-qIBdMPDjEAQyThGAzL_38u6Try8jDrZNq93NhsUITX1LTypLps-yeRxO/exec';
+        
+        let employees = [];
+        let editingId = null;
+        
+        // Load employees on page load
+        window.onload = function() {
+            loadEmployees();
+            loadTLs();
+        };
+        
+        function loadEmployees() {
+            // First try localStorage (for offline/demo), then Apps Script
+            const stored = localStorage.getItem('cft_employees');
+            if (stored) {
+                employees = JSON.parse(stored);
+                renderEmployeeTable();
+                updateStats();
+                loadTLs();
+                return;
+            }
+            
+            // Try Apps Script
+            fetch(APPS_SCRIPT_URL + '?action=getEmployees', {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' }
+            }).then(() => {
+                // Apps Script will populate this - for now use defaults
+            }).catch(() => {});
+            
+            // Default employees for demo
+            employees = [
+                { name: 'Chetan', empId: 'CFT001', email: 'chetan@craftech360.com', password: 'cft123', department: 'Software', designation: 'Developer', status: 'Active', tl: 'suman@craftech360.com', hod: 'hr@craftech360.com' },
+                { name: 'Harsh', empId: 'CFT002', email: 'harsh@craftech360.com', password: 'cft123', department: 'Software', designation: 'Developer', status: 'Active', tl: 'suman@craftech360.com', hod: 'hr@craftech360.com' },
+                { name: 'Kotresh', empId: 'CFT003', email: 'kotresh@craftech360.com', password: 'cft123', department: 'Software', designation: 'Developer', status: 'Active', tl: 'suman@craftech360.com', hod: 'hr@craftech360.com' },
+                { name: 'Suman N', empId: 'HR001', email: 'suman@craftech360.com', password: 'cft123', department: 'HR & Admin', designation: 'HR Lead', status: 'Active', tl: 'pattar@craftech360.com', hod: 'pattar@craftech360.com' },
+                { name: 'HR Admin', empId: 'ADM001', email: 'hr@craftech360.com', password: 'cft360', department: 'HR & Admin', designation: 'Admin', status: 'Active', tl: '', hod: 'pattar@craftech360.com' },
+                { name: 'Shrishail Pattar', empId: 'DIR001', email: 'pattar@craftech360.com', password: 'cft123', department: 'Management', designation: 'Director', status: 'Active', tl: '', hod: '' }
+            ];
+            localStorage.setItem('cft_employees', JSON.stringify(employees));
+            renderEmployeeTable();
+            updateStats();
+            loadTLs();
+        }
+        
+        async function loadTLs() {
+            // Get all TLs from employees list
+            const tls = [...new Set(employees.filter(e => e.tl && e.tl !== '').map(e => e.tl))];
+            const select = document.getElementById('empTL');
+            select.innerHTML = '<option value="">Select TL</option>';
+            tls.forEach(tl => {
+                const emp = employees.find(e => e.email === tl);
+                const name = emp ? emp.name : tl;
+                select.innerHTML += `<option value="${tl}">${name}</option>`;
+            });
+            
+            // Add any from USERS hardcoded
+            const hardcodedTLs = [
+                { email: 'suman@craftech360.com', name: 'Suman N (HR)' },
+                { email: 'abilash@craftech360.com', name: 'Abilash S (CTO)' }
+            ];
+            hardcodedTLs.forEach(tl => {
+                if (!select.querySelector(`option[value="${tl.email}"]`)) {
+                    select.innerHTML += `<option value="${tl.email}">${tl.name}</option>`;
+                }
+            });
+        }
+        
+        function renderEmployeeTable() {
+            const tbody = document.getElementById('employeeTable');
+            if (!employees.length) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#64748b;">No employees found. Add one above.</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            employees.forEach(emp => {
+                const tlName = employees.find(e => e.email === emp.tl)?.name || emp.tl || '-';
+                const hodName = getHODName(emp.hod);
+                
+                html += `
+                    <tr>
+                        <td><strong>${emp.empId || '-'}</strong></td>
+                        <td>${emp.name}</td>
+                        <td>${emp.email}</td>
+                        <td>${emp.department || '-'}</td>
+                        <td>${emp.designation || '-'}</td>
+                        <td>${tlName}</td>
+                        <td>${hodName}</td>
+                        <td><span class="${emp.status === 'Active' ? 'status-active' : 'status-inactive'}">${emp.status || 'Active'}</span></td>
+                        <td>
+                            <button class="btn btn-primary action-btn" onclick="editEmployee('${emp.email}')">✏️</button>
+                            <button class="btn btn-danger action-btn" onclick="deleteEmployee('${emp.email}')">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+        
+        function getHODName(hodEmail) {
+            const hodMap = {
+                'hr@craftech360.com': 'HR Admin',
+                'pattar@craftech360.com': 'Shrishail Pattar',
+                'ravi@craftech360.com': 'Ravi Kumar',
+                'abilash@craftech360.com': 'Abilash S (CTO)'
+            };
+            return hodMap[hodEmail] || hodEmail || '-';
+        }
+        
+        function updateStats() {
+            document.getElementById('totalEmp').innerText = employees.length;
+            document.getElementById('activeEmp').innerText = employees.filter(e => e.status === 'Active').length;
+            
+            const tls = [...new Set(employees.filter(e => e.tl).map(e => e.tl))];
+            document.getElementById('totalTL').innerText = tls.length;
+            
+            const hods = [...new Set(employees.filter(e => e.hod).map(e => e.hod))];
+            document.getElementById('totalAdmin').innerText = hods.length;
+        }
+        
+        function saveEmployee() {
+            const data = {
+                name: document.getElementById('empName').value,
+                empId: document.getElementById('empId').value,
+                department: document.getElementById('empDept').value,
+                designation: document.getElementById('empDesig').value,
+                email: document.getElementById('empEmail').value,
+                password: document.getElementById('empPassword').value,
+                status: document.getElementById('empStatus').value,
+                doj: document.getElementById('empDOJ').value,
+                tl: document.getElementById('empTL').value,
+                hod: document.getElementById('empHOD').value,
+                role: 'employee'
+            };
+            
+            if (!data.name || !data.empId || !data.email) {
+                alert('Please fill required fields (Name, Employee ID, Email)');
+                return;
+            }
+            
+            // Save to localStorage (also try Apps Script in background)
+            if (editingId) {
+                employees = employees.map(e => e.email === editingId ? { ...e, ...data } : e);
+            } else {
+                employees.push(data);
+            }
+            localStorage.setItem('cft_employees', JSON.stringify(employees));
+            
+            // Also try Apps Script
+            fetch(APPS_SCRIPT_URL + '?action=saveEmployee', {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).catch(() => {});
+            
+            showToast('Employee saved!');
+            clearForm();
+            renderEmployeeTable();
+            updateStats();
+            loadTLs();
+        }
+        
+        function editEmployee(email) {
+            const emp = employees.find(e => e.email === email);
+            if (!emp) return;
+            
+            editingId = email;
+            document.getElementById('empName').value = emp.name || '';
+            document.getElementById('empId').value = emp.empId || '';
+            document.getElementById('empDept').value = emp.department || '';
+            document.getElementById('empDesig').value = emp.designation || '';
+            document.getElementById('empEmail').value = emp.email || '';
+            document.getElementById('empPassword').value = emp.password || 'cft123';
+            document.getElementById('empStatus').value = emp.status || 'Active';
+            document.getElementById('empDOJ').value = emp.doj || '';
+            document.getElementById('empTL').value = emp.tl || '';
+            document.getElementById('empHOD').value = emp.hod || '';
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function deleteEmployee(email) {
+            if (!confirm('Are you sure you want to delete this employee?')) return;
+            
+            employees = employees.filter(e => e.email !== email);
+            localStorage.setItem('cft_employees', JSON.stringify(employees));
+            
+            fetch(APPS_SCRIPT_URL + '?action=deleteEmployee', {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            }).catch(() => {});
+            
+            showToast('Employee deleted!');
+            renderEmployeeTable();
+            updateStats();
+            loadTLs();
+        }
+        
+        function clearForm() {
+            editingId = null;
+            document.getElementById('empName').value = '';
+            document.getElementById('empId').value = '';
+            document.getElementById('empDept').value = '';
+            document.getElementById('empDesig').value = '';
+            document.getElementById('empEmail').value = '';
+            document.getElementById('empPassword').value = 'cft123';
+            document.getElementById('empStatus').value = 'Active';
+            document.getElementById('empDOJ').value = '';
+            document.getElementById('empTL').value = '';
+            document.getElementById('empHOD').value = '';
+        }
+        
+        function filterEmployees() {
+            const search = document.getElementById('searchEmp').value.toLowerCase();
+            const filtered = employees.filter(e => 
+                e.name?.toLowerCase().includes(search) ||
+                e.email?.toLowerCase().includes(search) ||
+                e.department?.toLowerCase().includes(search) ||
+                e.empId?.toLowerCase().includes(search)
+            );
+            
+            const tbody = document.getElementById('employeeTable');
+            if (!filtered.length) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#64748b;">No matching employees found.</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            filtered.forEach(emp => {
+                const tlName = employees.find(e => e.email === emp.tl)?.name || emp.tl || '-';
+                const hodName = getHODName(emp.hod);
+                
+                html += `
+                    <tr>
+                        <td><strong>${emp.empId || '-'}</strong></td>
+                        <td>${emp.name}</td>
+                        <td>${emp.email}</td>
+                        <td>${emp.department || '-'}</td>
+                        <td>${emp.designation || '-'}</td>
+                        <td>${tlName}</td>
+                        <td>${hodName}</td>
+                        <td><span class="${emp.status === 'Active' ? 'status-active' : 'status-inactive'}">${emp.status || 'Active'}</span></td>
+                        <td>
+                            <button class="btn btn-primary action-btn" onclick="editEmployee('${emp.email}')">✏️</button>
+                            <button class="btn btn-danger action-btn" onclick="deleteEmployee('${emp.email}')">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+        
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>
