@@ -587,7 +587,7 @@
                 renderRatingGrid();
                 
                 // Load existing review data from sheet
-                loadEmployeeReviewById(currentUser.email.split('@')[0]);
+                loadEmployeeReviewById(currentUser.email);
             } else {
                 // For TL/Admin
                 currentRole = currentUser.role;
