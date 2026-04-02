@@ -417,8 +417,20 @@
             }
         }
         
-        // Call on load - force refresh every time
-        loadEmployeesFromAPI();
+        // Initialize: Load from API first, then populate USERS
+        function initApp() {
+            // First, clear old cached data to force fresh load
+            localStorage.removeItem('cft_employees');
+            localStorage.removeItem('cft_user');
+            
+            // Load fresh from API, then populate USERS
+            loadEmployeesFromAPI().then(() => {
+                loadUsersFromStorage();
+            });
+        }
+        
+        // Call init on load
+        initApp();
         
         const RATING_FIELDS = [
             'Technical Skills', 'Quality & Accuracy', 'Meeting Deadlines', 'Adaptability', 'Proactivity',
