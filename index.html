@@ -372,7 +372,19 @@
                 </div>
                 
                 <div style="margin-top: 20px;" id="employeeActions">
-                    <button class="btn btn-primary" onclick="submitReview()">Submit My Review</button>
+                    <button class="btn" onclick="saveDraft()" style="background:#64748b;color:white;margin-right:10px;">💾 Save Draft</button>
+                    <button class="btn btn-primary" onclick="submitReview()">✅ Submit Review</button>
+                </div>
+                
+                <!-- TL Actions -->
+                <div style="margin-top: 20px; display:none;" id="tlActions">
+                    <button class="btn" onclick="sendBackForCorrection()" style="background:#f59e0b;color:white;margin-right:10px;">🔄 Send Back for Correction</button>
+                    <button class="btn btn-primary" onclick="submitReview()">✅ Submit TL Review</button>
+                </div>
+                
+                <!-- Status Banner -->
+                <div id="statusBanner" style="margin-top:20px;padding:12px;border-radius:8px;background:#f1f5f9;text-align:center;font-weight:600;display:none;">
+                    Status: <span id="currentStatus">-</span>
                 </div>
             </div>
         </div>
@@ -878,6 +890,140 @@
                 alert('Error submitting review');
             }
         }
+        
+        // Save Draft - saves without changing status
+        async function saveDraft() {
+            const empId = currentRole === 'employee' ? document.getElementById('employeeId').value : document.getElementById('employeeSelect').value;
+            if (!empId) { alert('Please enter Employee ID'); return; }
+            
+            const data = {
+                employeeId: empId,
+                employeeName: document.getElementById('employeeName').value,
+                department: document.getElementById('department').value,
+                designation: document.getElementById('designation').value,
+                dateOfJoining: document.getElementById('dateOfJoining').value,
+                reportingManager: document.getElementById('reportingManager').value,
+                reviewCycle: '2026',
+                status: document.getElementById('currentStatus')?.innerText || 'Draft'
+            };
+            
+            // Save ratings
+            for (let i = 1; i <= 10; i++) {
+                if (currentRole === 'employee') data['selfRating' + i] = document.getElementById('selfRating' + i)?.value || '';
+                if (currentRole === 'tl') data['tlRating' + i] = document.getElementById('tlRating' + i)?.value || '';
+                if (currentRole === 'mgmt') data['mgmtRating' + i] = document.getElementById('mgmtRating' + i)?.value || '';
+            }
+            
+            // Save text fields
+            TEXT_FIELDS.forEach(f => {
+                if (currentRole === 'employee') data['self' + capitalize(f.key)] = document.getElementById('self' + capitalize(f.key))?.value || '';
+                if (currentRole === 'tl') data['tl' + capitalize(f.key)] = document.getElementById('tl' + capitalize(f.key))?.value || '';
+                if (currentRole === 'mgmt') data['mgmt' + capitalize(f.key)] = document.getElementById('mgmt' + capitalize(f.key))?.value || '';
+            });
+            
+            const action = currentRole === 'employee' ? 'saveDraft' : (currentRole === 'tl' ? 'saveDraft' : 'saveDraft');
+            
+            try {
+                await fetch(APPS_SCRIPT_URL + '?action=' + action, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                showToast('Draft saved!');
+                loadDashboard();
+            } catch (e) {
+                alert('Error saving draft');
+            }
+        }
+        
+        // Send back for correction (TL only)
+        async function sendBackForCorrection() {
+            const empId = document.getElementById('employeeSelect').value;
+            if (!empId) { alert('Select an employee'); return; }
+            
+            const data = {
+                employeeId: empId,
+                status: 'Draft'
+            };
+            
+            try {
+                await fetch(APPS_SCRIPT_URL + '?action=sendBack', {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                showToast('Sent back for correction!');
+                loadDashboard();
+            } catch (e) {
+                alert('Error sending back');
+            }
+        }
+        
+        // Apply section locking based on status
+        function applySectionLocking(status) {
+            const statusBanner = document.getElementById('statusBanner');
+            const selfFields = document.querySelectorAll('#questionsBody textarea[id^="self"], #ratingGridContent input[id^="selfRating"]');
+            const tlFields = document.querySelectorAll('#questionsBody textarea[id^="tl"], #ratingGridContent input[id^="tlRating"]');
+            const mgmtFields = document.querySelectorAll('#questionsBody textarea[id^="mgmt"], #ratingGridContent input[id^="mgmtRating"]');
+            
+            // Show status
+            if (status && status !== '-') {
+                statusBanner.style.display = 'block';
+                document.getElementById('currentStatus').innerText = status;
+            }
+            
+            // Lock employee section after submission
+            if (status === 'Submitted by Employee' || status === 'Under TL Review' || status === 'TL Reviewed' || status === 'Finalized') {
+                selfFields.forEach(f => { f.disabled = true; f.style.background = '#f1f5f9'; });
+                document.querySelectorAll('.star-rating[data-role="employee"] .star').forEach(s => { s.style.pointerEvents = 'none'; s.style.opacity = '0.5'; });
+            }
+            
+            // Lock TL section after TL submits
+            if (status === 'TL Reviewed' || status === 'Finalized') {
+                tlFields.forEach(f => { f.disabled = true; f.style.background = '#f1f5f9'; });
+                document.querySelectorAll('.star-rating[data-role="tl"] .star').forEach(s => { s.style.pointerEvents = 'none'; s.style.opacity = '0.5'; });
+            }
+            
+            // Lock everything if finalized
+            if (status === 'Finalized') {
+                mgmtFields.forEach(f => { f.disabled = true; f.style.background = '#f1f5f9'; });
+                document.querySelectorAll('.star-rating[data-role="mgmt"] .star').forEach(s => { s.style.pointerEvents = 'none'; s.style.opacity = '0.5'; });
+                document.getElementById('employeeActions').style.display = 'none';
+                document.getElementById('tlActions').style.display = 'none';
+                document.getElementById('mgmtActions').style.display = 'none';
+            }
+            
+            // Show appropriate action buttons based on role and status
+            const empActions = document.getElementById('employeeActions');
+            const tlActions = document.getElementById('tlActions');
+            
+            if (currentRole === 'employee') {
+                empActions.style.display = 'block';
+                tlActions.style.display = 'none';
+                if (status === 'Draft' || !status) {
+                    // Show save draft and submit
+                }
+            } else if (currentRole === 'tl') {
+                empActions.style.display = 'none';
+                tlActions.style.display = 'block';
+                if (status === 'Submitted by Employee' || status === 'Under TL Review') {
+                    // TL can review
+                } else {
+                    tlActions.style.display = 'none';
+                }
+            }
+        }
+        
+        // Update populateForm to handle status
+        const originalPopulateForm = populateForm;
+        populateForm = function(data) {
+            originalPopulateForm(data);
+            // Status is in column 70 (or wherever we store it)
+            const status = data[69] || 'Draft';
+            applySectionLocking(status);
+        };
         
         function showToast(message) {
             const toast = document.getElementById('toast');
