@@ -462,7 +462,7 @@
                     email: e.email,
                     password: e.password || 'cft123',
                     name: e.name,
-                    role: e.role === 'admin' ? 'admin' : (e.tl ? 'tl' : 'employee'),
+                    role: 'employee', // Default role is employee
                     tlId: e.tl || '',
                     hod: e.hod
                 }));
