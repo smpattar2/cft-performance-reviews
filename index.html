@@ -98,17 +98,110 @@
         .employee-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
         .employee-fields .form-group label { font-size: 12px; color: #64748b; margin-bottom: 4px; }
         .employee-fields .form-group input { font-size: 13px; padding: 10px; }
+        
+        /* Login Styles */
+        .login-screen { 
+            min-height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: linear-gradient(135deg, #1e40af, #3b82f6); 
+            padding: 20px;
+        }
+        .login-box { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 16px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); 
+            width: 100%; 
+            max-width: 400px; 
+        }
+        .login-box h2 { text-align: center; margin-bottom: 8px; color: #1e40af; }
+        .login-box p { text-align: center; color: #64748b; margin-bottom: 24px; font-size: 14px; }
+        .login-box .form-group { margin-bottom: 16px; }
+        .login-box .form-group label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px; }
+        .login-box input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+        .login-box input:focus { outline: none; border-color: #3b82f6; }
+        .login-box button { width: 100%; padding: 14px; background: #1e40af; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 15px; }
+        .login-box button:hover { background: #1e3a8a; }
+        .login-box .error { color: #dc2626; font-size: 13px; margin-top: 8px; text-align: center; display: none; }
+        
+        .main-app { display: none; }
+        .main-app.active { display: block; }
+        
+        .role-badge { 
+            display: inline-block; 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-size: 12px; 
+            font-weight: 600; 
+            margin-left: 8px; 
+        }
+        .role-employee { background: #dbeafe; color: #1e40af; }
+        .role-tl { background: #fef3c7; color: #d97706; }
+        .role-admin { background: #dcfce7; color: #16a34a; }
+        
+        .logout-btn { 
+            background: rgba(255,255,255,0.2); 
+            border: 1px solid rgba(255,255,255,0.3); 
+            color: white; 
+            padding: 6px 14px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 13px; 
+            margin-left: 12px;
+        }
+        .logout-btn:hover { background: rgba(255,255,255,0.3); }
+        
+        .restricted { opacity: 0.5; pointer-events: none; }
+        .section-locked { background: #f8fafc; padding: 12px; border-radius: 8px; text-align: center; color: #64748b; font-size: 13px; }
+        
+        /* Status badge */
+        .status-badge { 
+            display: inline-block; 
+            padding: 4px 10px; 
+            border-radius: 4px; 
+            font-size: 11px; 
+            font-weight: 600; 
+            text-transform: uppercase;
+        }
+        .status-draft { background: #f1f5f9; color: #64748b; }
+        .status-submitted { background: #dbeafe; color: #2563eb; }
+        .status-tl-review { background: #fef3c7; color: #d97706; }
+        .status-tl-reviewed { background: #e0e7ff; color: #4338ca; }
+        .status-final { background: #dcfce7; color: #16a34a; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-box">
+            <h2>🎖️ CFT360</h2>
+            <p>Performance Review Login</p>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="loginEmail" placeholder="your.email@craftech360.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter password">
+            </div>
+            <button onclick="login()">Sign In</button>
+            <div id="loginError" class="error">Invalid credentials. Try again.</div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="main-app">
+        <div class="container">
+            <div class="header">
             <div>
                 <h1>📊 CFT Performance Review 2026</h1>
                 <p>Employee | Team Lead | Management</p>
             </div>
             <div class="user-info">
-                <div id="currentUser">Select Role</div>
+                <div id="currentUser">Not logged in</div>
+                <button class="logout-btn" onclick="logout()">Logout</button>
             </div>
         </div>
         
@@ -308,29 +401,113 @@
             { key: 'impactIfNotThere', label: '10. If You Were Not There', desc: 'If you were not part of the team, what would have been impacted? Be specific.' }
         ];
         
-        let currentRole = 'employee';
-        let currentData = {};
+        // ===== AUTH SYSTEM =====
+        const USERS = [
+            { email: 'chetan@craftech360.com', password: 'cft123', name: 'Chetan', role: 'employee', tlId: 'suman@craftech360.com' },
+            { email: 'harsh@craftech360.com', password: 'cft123', name: 'Harsh', role: 'employee', tlId: 'suman@craftech360.com' },
+            { email: 'kotresh@craftech360.com', password: 'cft123', name: 'Kotresh', role: 'employee', tlId: 'suman@craftech360.com' },
+            { email: 'karthikeya@craftech360.com', password: 'cft123', name: 'Karthikeya', role: 'employee', tlId: 'abilash@craftech360.com' },
+            { email: 'rahul@craftech360.com', password: 'cft123', name: 'Rahul', role: 'employee', tlId: 'abilash@craftech360.com' },
+            { email: 'suman@craftech360.com', password: 'cft123', name: 'Suman N (HR)', role: 'tl', team: ['chetan', 'harsh', 'kotresh'] },
+            { email: 'abilash@craftech360.com', password: 'cft123', name: 'Abilash S (CTO)', role: 'tl', team: ['karthikeya', 'rahul'] },
+            { email: 'hr@craftech360.com', password: 'cft123', name: 'HR Admin', role: 'admin' },
+            { email: 'pattar@craftech360.com', password: 'cft123', name: 'Shrishail Pattar', role: 'admin' },
+            { email: 'ravi@craftech360.com', password: 'cft123', name: 'Ravi Kumar', role: 'admin' }
+        ];
+        
+        let currentUser = null;
         
         window.onload = function() {
-            console.log('Page loaded, rendering...');
+            const savedUser = localStorage.getItem('cft_user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showMainApp();
+            } else {
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('mainApp').classList.remove('active');
+            }
             renderQuestions();
             renderRatingGrid();
             loadDashboard();
             
-            // Fallback: render questions after a short delay if still empty
             setTimeout(function() {
                 const tbody = document.getElementById('questionsBody');
                 if (tbody && tbody.innerHTML.trim() === '') {
-                    console.log('Fallback: rendering questions');
                     renderQuestions();
                 }
             }, 1000);
         };
         
+        function login() {
+            const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+            const password = document.getElementById('loginPassword').value;
+            const user = USERS.find(u => u.email === email && u.password === password);
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('cft_user', JSON.stringify(user));
+                document.getElementById('loginError').style.display = 'none';
+                showMainApp();
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+            }
+        }
+        
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('cft_user');
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('mainApp').classList.remove('active');
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+        }
+        
+        function showMainApp() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').classList.add('active');
+            const roleBadge = currentUser.role === 'admin' ? '<span class="role-badge role-admin">ADMIN</span>' : 
+                             currentUser.role === 'tl' ? '<span class="role-badge role-tl">TEAM LEAD</span>' : 
+                             '<span class="role-badge role-employee">EMPLOYEE</span>';
+            document.getElementById('currentUser').innerHTML = `${currentUser.name}${roleBadge}`;
+            selectRole(currentUser.role);
+            loadEmployeesList();
+            if (currentUser.role === 'employee') {
+                setTimeout(() => {
+                    document.getElementById('employeeSelect').value = currentUser.email;
+                    loadEmployeeReview();
+                }, 500);
+            }
+        }
+        
+        function loadEmployeesList() {
+            const select = document.getElementById('employeeSelect');
+            let options = '<option value="">-- Select Employee --</option>';
+            if (currentUser.role === 'admin') {
+                USERS.filter(u => u.role === 'employee').forEach(u => {
+                    options += `<option value="${u.email}">${u.name}</option>`;
+                });
+            } else if (currentUser.role === 'tl') {
+                USERS.filter(u => u.tlId === currentUser.email).forEach(u => {
+                    options += `<option value="${u.email}">${u.name}</option>`;
+                });
+            }
+            select.innerHTML = options;
+        }
+        // ===== END AUTH SYSTEM =====
+        
+        let currentRole = 'employee';
+        
         function selectRole(role) {
+            // Enforce role from login - employees can't switch to other roles
+            if (currentUser && currentUser.role === 'employee' && role !== 'employee') {
+                role = 'employee';
+            }
+            if (currentUser && currentUser.role === 'tl' && role === 'employee') {
+                role = 'tl';
+            }
+            
             currentRole = role;
             document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
             
             // Show/hide employee select based on role
             const empSelectDiv = document.getElementById('employeeSelectDiv');
@@ -653,6 +830,12 @@
                 return;
             }
             
+            // Determine status based on role
+            let status = 'Draft';
+            if (currentRole === 'employee') status = 'Submitted by Employee';
+            else if (currentRole === 'tl') status = 'TL Reviewed';
+            else if (currentRole === 'mgmt') status = 'Finalized';
+            
             const data = {
                 employeeId: empId,
                 employeeName: document.getElementById('employeeName').value,
@@ -660,7 +843,8 @@
                 designation: document.getElementById('designation').value,
                 dateOfJoining: document.getElementById('dateOfJoining').value,
                 reportingManager: document.getElementById('reportingManager').value,
-                reviewCycle: '2026'
+                reviewCycle: '2026',
+                status: status
             };
             
             // Collect ratings
