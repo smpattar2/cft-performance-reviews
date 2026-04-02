@@ -569,7 +569,7 @@
             // For employees, pre-fill their details and switch to review tab
             if (currentUser.role === 'employee') {
                 document.getElementById('employeeName').value = currentUser.name;
-                document.getElementById('employeeId').value = currentUser.email.split('@')[0];
+                document.getElementById('employeeId').value = currentUser.email;
                 document.getElementById('department').value = 'Software';
                 
                 // Auto-switch to review form view
