@@ -395,21 +395,29 @@
     <script>
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzevDeGn5pp1CnGxk6HHtxHPmbF-wabABedpuJj1z3T6XeqRzX9B1z_H7rdw7gBb3C7/exec';
         
-        // Load employees from API on startup
+        // Load employees from API on startup (force refresh to bypass cache)
         async function loadEmployeesFromAPI() {
             try {
-                const response = await fetch(APPS_SCRIPT_URL + '?action=getEmployees');
+                const response = await fetch(APPS_SCRIPT_URL + '?action=getEmployees&t=' + Date.now());
                 const data = await response.json();
                 if (data.employees && data.employees.length > 0) {
-                    localStorage.setItem('cft_employees', JSON.stringify(data.employees));
-                    console.log('Loaded ' + data.employees.length + ' employees from API');
+                    // Trim all string values to fix trailing spaces
+                    const cleaned = data.employees.map(e => {
+                        const cleanedObj = {};
+                        for (let key in e) {
+                            cleanedObj[key] = typeof e[key] === 'string' ? e[key].trim() : e[key];
+                        }
+                        return cleanedObj;
+                    });
+                    localStorage.setItem('cft_employees', JSON.stringify(cleaned));
+                    console.log('Loaded ' + cleaned.length + ' employees from API');
                 }
             } catch (err) {
                 console.error('Failed to load employees:', err);
             }
         }
         
-        // Call on load
+        // Call on load - force refresh every time
         loadEmployeesFromAPI();
         
         const RATING_FIELDS = [
