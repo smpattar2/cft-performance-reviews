@@ -393,7 +393,24 @@
     <div id="toast" class="toast">✓ Saved successfully!</div>
     
     <script>
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxQc5bTsAo-qIBdMPDjEAQyThGAzL_38u6Try8jDrZNq93NhsUITX1LTypLps-yeRxO/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzevDeGn5pp1CnGxk6HHtxHPmbF-wabABedpuJj1z3T6XeqRzX9B1z_H7rdw7gBb3C7/exec';
+        
+        // Load employees from API on startup
+        async function loadEmployeesFromAPI() {
+            try {
+                const response = await fetch(APPS_SCRIPT_URL + '?action=getEmployees');
+                const data = await response.json();
+                if (data.employees && data.employees.length > 0) {
+                    localStorage.setItem('cft_employees', JSON.stringify(data.employees));
+                    console.log('Loaded ' + data.employees.length + ' employees from API');
+                }
+            } catch (err) {
+                console.error('Failed to load employees:', err);
+            }
+        }
+        
+        // Call on load
+        loadEmployeesFromAPI();
         
         const RATING_FIELDS = [
             'Technical Skills', 'Quality & Accuracy', 'Meeting Deadlines', 'Adaptability', 'Proactivity',
