@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CFT Performance Reviews</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; }
+        
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        
+        .header { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 30px; border-radius: 12px; margin-bottom: 24px; }
+        .header h1 { font-size: 28px; margin-bottom: 8px; }
+        .header p { opacity: 0.9; }
+        
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; background: white; padding: 8px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .tab { padding: 10px 20px; border: none; background: none; cursor: pointer; border-radius: 8px; font-weight: 500; color: #64748b; transition: all 0.2s; }
+        .tab.active { background: #6366f1; color: white; }
+        
+        .view { display: none; }
+        .view.active { display: block; }
+        
+        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #374151; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        
+        .rating-group { display: flex; gap: 8px; }
+        .rating-option { flex: 1; text-align: center; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .rating-option:hover { border-color: #6366f1; }
+        .rating-option.selected { background: #6366f1; color: white; border-color: #6366f1; }
+        
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #6366f1; color: white; }
+        .btn-primary:hover { background: #5558e3; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .stat-value { font-size: 32px; font-weight: bold; color: #6366f1; }
+        .stat-label { color: #64748b; font-size: 14px; margin-top: 4px; }
+        
+        .review-table { width: 100%; border-collapse: collapse; }
+        .review-table th, .review-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        .review-table th { background: #f8fafc; font-weight: 600; color: #64748b; }
+        
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .status-self { background: #fef3c7; color: #d97706; }
+        .status-tl { background: #dbeafe; color: #2563eb; }
+        .status-final { background: #dcfce7; color: #16a34a; }
+        
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #22c55e; color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; }
+        .toast.show { display: block; animation: slideIn 0.3s ease; }
+        
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 CFT Performance Reviews</h1>
+            <p>Annual Review Cycle 2026</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchView('dashboard')">Dashboard</button>
+            <button class="tab" onclick="switchView('selfReview')">Self Review</button>
+            <button class="tab" onclick="switchView('tlReview')">TL Review</button>
+            <button class="tab" onclick="switchView('mgmtReview')">Management</button>
+        </div>
+        
+        <!-- Dashboard View -->
+        <div id="dashboardView" class="view active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalReviews">0</div>
+                    <div class="stat-label">Total Reviews</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgSelfRating">0</div>
+                    <div class="stat-label">Avg Self Rating</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgTLRating">0</div>
+                    <div class="stat-label">Avg TL Rating</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgMgmtRating">0</div>
+                    <div class="stat-label">Avg Final Rating</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3 style="margin-bottom: 16px;">All Reviews</h3>
+                <table class="review-table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Self Rating</th>
+                            <th>TL Rating</th>
+                            <th>Final Rating</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reviewsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Self Review View -->
+        <div id="selfReviewView" class="view">
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">✍️ Self Assessment</h2>
+                <form id="selfReviewForm" onsubmit="submitSelfReview(event)">
+                    <div class="form-group">
+                        <label>Employee Name *</label>
+                        <input type="text" id="employeeName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Employee ID *</label>
+                        <input type="text" id="employeeId" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Department *</label>
+                        <select id="department" required>
+                            <option value="">Select Department</option>
+                            <option value="Software">Software</option>
+                            <option value="Embedded">Embedded</option>
+                            <option value="Creative">Creative</option>
+                            <option value="Business Development">Business Development</option>
+                            <option value="Operations">Operations</option>
+                            <option value="HR & Admin">HR & Admin</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Goals Achieved This Year</label>
+                        <textarea id="selfGoals" placeholder="List your key goals and achievements..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Key Achievements</label>
+                        <textarea id="selfAchievements" placeholder="Describe your major accomplishments..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Areas of Improvement</label>
+                        <textarea id="selfImprovements" placeholder="What areas would you like to improve?"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Skills Developed</label>
+                        <textarea id="selfSkills" placeholder="New skills learned this year..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Overall Self Rating *</label>
+                        <div class="rating-group" id="selfRatingGroup">
+                            <div class="rating-option" onclick="selectRating('selfRating', 1)">1</div>
+                            <div class="rating-option" onclick="selectRating('selfRating', 2)">2</div>
+                            <div class="rating-option" onclick="selectRating('selfRating', 3)">3</div>
+                            <div class="rating-option" onclick="selectRating('selfRating', 4)">4</div>
+                            <div class="rating-option" onclick="selectRating('selfRating', 5)">5</div>
+                        </div>
+                        <input type="hidden" id="selfRating" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Submit Self Review</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- TL Review View -->
+        <div id="tlReviewView" class="view">
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">👔 TL Review</h2>
+                <form id="tlReviewForm" onsubmit="submitTLReview(event)">
+                    <div class="form-group">
+                        <label>Review ID (from employee) *</label>
+                        <input type="text" id="tlReviewId" required>
+                    </div>
+                    <div class="form-group">
+                        <label>TL Name *</label>
+                        <input type="text" id="tlName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Performance Rating *</label>
+                        <div class="rating-group" id="tlRatingGroup">
+                            <div class="rating-option" onclick="selectRating('tlRating', 1)">1</div>
+                            <div class="rating-option" onclick="selectRating('tlRating', 2)">2</div>
+                            <div class="rating-option" onclick="selectRating('tlRating', 3)">3</div>
+                            <div class="rating-option" onclick="selectRating('tlRating', 4)">4</div>
+                            <div class="rating-option" onclick="selectRating('tlRating', 5)">5</div>
+                        </div>
+                        <input type="hidden" id="tlRating" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Strengths Observed</label>
+                        <textarea id="tlStrengths" placeholder="Key strengths of the employee..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Areas to Work On</label>
+                        <textarea id="tlImprovements" placeholder="Areas needing improvement..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Punctuality & Attendance</label>
+                        <div class="rating-group" id="tlPunctualityGroup">
+                            <div class="rating-option" onclick="selectRating('tlPunctuality', 1)">1</div>
+                            <div class="rating-option" onclick="selectRating('tlPunctuality', 2)">2</div>
+                            <div class="rating-option" onclick="selectRating('tlPunctuality', 3)">3</div>
+                            <div class="rating-option" onclick="selectRating('tlPunctuality', 4)">4</div>
+                            <div class="rating-option" onclick="selectRating('tlPunctuality', 5)">5</div>
+                        </div>
+                        <input type="hidden" id="tlPunctuality">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Team Collaboration</label>
+                        <div class="rating-group" id="tlCollaborationGroup">
+                            <div class="rating-option" onclick="selectRating('tlCollaboration', 1)">1</div>
+                            <div class="rating-option" onclick="selectRating('tlCollaboration', 2)">2</div>
+                            <div class="rating-option" onclick="selectRating('tlCollaboration', 3)">3</div>
+                            <div class="rating-option" onclick="selectRating('tlCollaboration', 4)">4</div>
+                            <div class="rating-option" onclick="selectRating('tlCollaboration', 5)">5</div>
+                        </div>
+                        <input type="hidden" id="tlCollaboration">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Submit TL Review</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Management Review View -->
+        <div id="mgmtReviewView" class="view">
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">🏆 Management Final Review</h2>
+                <form id="mgmtReviewForm" onsubmit="submitMgmtReview(event)">
+                    <div class="form-group">
+                        <label>Review ID *</label>
+                        <input type="text" id="mgmtReviewId" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Manager Name *</label>
+                        <input type="text" id="mgmtName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Final Rating *</label>
+                        <div class="rating-group" id="mgmtRatingGroup">
+                            <div class="rating-option" onclick="selectRating('mgmtRating', 1)">1</div>
+                            <div class="rating-option" onclick="selectRating('mgmtRating', 2)">2</div>
+                            <div class="rating-option" onclick="selectRating('mgmtRating', 3)">3</div>
+                            <div class="rating-option" onclick="selectRating('mgmtRating', 4)">4</div>
+                            <div class="rating-option" onclick="selectRating('mgmtRating', 5)">5</div>
+                        </div>
+                        <input type="hidden" id="mgmtRating" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Bonus Eligible?</label>
+                        <select id="mgmtBonus">
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Promotion Consideration?</label>
+                        <select id="mgmtPromotion">
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Comments</label>
+                        <textarea id="mgmtComments" placeholder="Final comments and notes..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Submit Final Review</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast" class="toast">✓ Saved successfully!</div>
+    
+    <script>
+        const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+        
+        let reviewsData = [];
+        
+        // Load data on page load
+        window.onload = function() {
+            loadReviews();
+        };
+        
+        function switchView(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            
+            document.getElementById(viewName + 'View').classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        function selectRating(field, value) {
+            document.getElementById(field).value = value;
+            
+            // Update visual
+            const groupId = field + 'Group';
+            const options = document.querySelectorAll('#' + groupId + ' .rating-option');
+            options.forEach((opt, idx) => {
+                opt.classList.toggle('selected', idx + 1 === value);
+            });
+        }
+        
+        async function loadReviews() {
+            try {
+                const response = await fetch(APPS_SCRIPT_URL + '?action=reviews');
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error('Error loading reviews:', data.error);
+                    return;
+                }
+                
+                reviewsData = data.length > 1 ? data.slice(1).map(row => ({
+                    reviewId: row[0],
+                    employeeName: row[1],
+                    employeeId: row[2],
+                    department: row[3],
+                    reviewCycle: row[4],
+                    selfGoals: row[5],
+                    selfAchievements: row[6],
+                    selfImprovements: row[7],
+                    selfSkills: row[8],
+                    selfRating: row[9],
+                    tlName: row[10],
+                    tlRating: row[11],
+                    tlStrengths: row[12],
+                    tlImprovements: row[13],
+                    tlPunctuality: row[14],
+                    tlCollaboration: row[15],
+                    mgmtName: row[16],
+                    mgmtRating: row[17],
+                    mgmtBonus: row[18],
+                    mgmtPromotion: row[19],
+                    mgmtComments: row[20],
+                    status: row[21],
+                    createdAt: row[22]
+                })) : [];
+                
+                updateDashboard();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+        
+        function updateDashboard() {
+            document.getElementById('totalReviews').textContent = reviewsData.length;
+            
+            let avgSelf = 0, avgTL = 0, avgMgmt = 0;
+            let countSelf = 0, countTL = 0, countMgmt = 0;
+            
+            reviewsData.forEach(r => {
+                if (r.selfRating) { avgSelf += parseFloat(r.selfRating); countSelf++; }
+                if (r.tlRating) { avgTL += parseFloat(r.tlRating); countTL++; }
+                if (r.mgmtRating) { avgMgmt += parseFloat(r.mgmtRating); countMgmt++; }
+            });
+            
+            document.getElementById('avgSelfRating').textContent = countSelf > 0 ? (avgSelf/countSelf).toFixed(1) : '-';
+            document.getElementById('avgTLRating').textContent = countTL > 0 ? (avgTL/countTL).toFixed(1) : '-';
+            document.getElementById('avgMgmtRating').textContent = countMgmt > 0 ? (avgMgmt/countMgmt).toFixed(1) : '-';
+            
+            // Update table
+            const tbody = document.getElementById('reviewsTableBody');
+            tbody.innerHTML = reviewsData.map(r => `
+                <tr>
+                    <td>${r.employeeName}</td>
+                    <td>${r.department}</td>
+                    <td>${r.selfRating || '-'}</td>
+                    <td>${r.tlRating || '-'}</td>
+                    <td>${r.mgmtRating || '-'}</td>
+                    <td><span class="status-badge ${getStatusClass(r.status)}">${r.status || 'Pending'}</span></td>
+                </tr>
+            `).join('');
+        }
+        
+        function getStatusClass(status) {
+            if (!status) return '';
+            if (status === 'Self-Completed') return 'status-self';
+            if (status === 'TL-Completed') return 'status-tl';
+            if (status === 'Final-Completed') return 'status-final';
+            return '';
+        }
+        
+        async function submitSelfReview(event) {
+            event.preventDefault();
+            
+            const data = {
+                employeeName: document.getElementById('employeeName').value,
+                employeeId: document.getElementById('employeeId').value,
+                department: document.getElementById('department').value,
+                reviewCycle: '2026',
+                selfGoals: document.getElementById('selfGoals').value,
+                selfAchievements: document.getElementById('selfAchievements').value,
+                selfImprovements: document.getElementById('selfImprovements').value,
+                selfSkills: document.getElementById('selfSkills').value,
+                selfRating: document.getElementById('selfRating').value
+            };
+            
+            try {
+                await fetch(APPS_SCRIPT_URL + '?action=submitSelfReview', {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                showToast('Self review submitted!');
+                document.getElementById('selfReviewForm').reset();
+                loadReviews();
+            } catch (error) {
+                alert('Error submitting review');
+            }
+        }
+        
+        async function submitTLReview(event) {
+            event.preventDefault();
+            
+            const data = {
+                reviewId: document.getElementById('tlReviewId').value,
+                tlName: document.getElementById('tlName').value,
+                tlRating: document.getElementById('tlRating').value,
+                tlStrengths: document.getElementById('tlStrengths').value,
+                tlImprovements: document.getElementById('tlImprovements').value,
+                tlPunctuality: document.getElementById('tlPunctuality').value,
+                tlCollaboration: document.getElementById('tlCollaboration').value
+            };
+            
+            try {
+                await fetch(APPS_SCRIPT_URL + '?action=submitTLReview', {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                showToast('TL review submitted!');
+                document.getElementById('tlReviewForm').reset();
+                loadReviews();
+            } catch (error) {
+                alert('Error submitting review');
+            }
+        }
+        
+        async function submitMgmtReview(event) {
+            event.preventDefault();
+            
+            const data = {
+                reviewId: document.getElementById('mgmtReviewId').value,
+                mgmtName: document.getElementById('mgmtName').value,
+                mgmtRating: document.getElementById('mgmtRating').value,
+                mgmtBonus: document.getElementById('mgmtBonus').value,
+                mgmtPromotion: document.getElementById('mgmtPromotion').value,
+                mgmtComments: document.getElementById('mgmtComments').value
+            };
+            
+            try {
+                await fetch(APPS_SCRIPT_URL + '?action=submitMgmtReview', {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                showToast('Final review submitted!');
+                document.getElementById('mgmtReviewForm').reset();
+                loadReviews();
+            } catch (error) {
+                alert('Error submitting review');
+            }
+        }
+        
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>
