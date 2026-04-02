@@ -585,6 +585,9 @@
                 // Force render questions
                 renderQuestions();
                 renderRatingGrid();
+                
+                // Load existing review data from sheet
+                loadEmployeeReviewById(currentUser.email.split('@')[0]);
             } else {
                 // For TL/Admin
                 currentRole = currentUser.role;
@@ -832,6 +835,27 @@
         
         async function loadEmployeeReview() {
             const empId = document.getElementById('employeeSelect').value;
+            if (!empId) { clearForm(); return; }
+            
+            try {
+                const response = await fetch(APPS_SCRIPT_URL + '?action=getReview', {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId: empId })
+                });
+                
+                const result = await response.json();
+                if (result.review) {
+                    populateForm(result.review);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        
+        // Load review by employee ID (for auto-load on login)
+        async function loadEmployeeReviewById(empId) {
             if (!empId) { clearForm(); return; }
             
             try {
