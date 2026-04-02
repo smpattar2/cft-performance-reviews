@@ -422,9 +422,8 @@
         
         // Initialize: Load from API first, then populate USERS
         function initApp() {
-            // First, clear old cached data to force fresh load
+            // Only clear employees cache, not user session
             localStorage.removeItem('cft_employees');
-            localStorage.removeItem('cft_user');
             
             // Load fresh from API, then populate USERS
             loadEmployeesFromAPI().then(() => {
@@ -862,15 +861,23 @@
             if (!empId) { clearForm(); return; }
             
             try {
+                console.log('Loading review for:', empId);
                 // Use GET request instead of POST (works better with CORS)
                 const response = await fetch(APPS_SCRIPT_URL + '?action=getReview&employeeId=' + encodeURIComponent(empId));
                 const result = await response.json();
+                console.log('API Response:', result);
                 
-                if (result.review) {
+                if (result.review && result.review[0]) {
+                    console.log('Review found, populating form...');
                     populateForm(result.review);
+                    document.getElementById('currentStatus').innerText = 'Loaded from saved';
+                } else {
+                    console.log('No review found for this employee');
+                    document.getElementById('currentStatus').innerText = 'New review';
                 }
             } catch (e) {
                 console.error('Error loading review:', e);
+                document.getElementById('currentStatus').innerText = 'Error loading';
             }
         }
         
