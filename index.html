@@ -859,19 +859,15 @@
             if (!empId) { clearForm(); return; }
             
             try {
-                const response = await fetch(APPS_SCRIPT_URL + '?action=getReview', {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ employeeId: empId })
-                });
-                
+                // Use GET request instead of POST (works better with CORS)
+                const response = await fetch(APPS_SCRIPT_URL + '?action=getReview&employeeId=' + encodeURIComponent(empId));
                 const result = await response.json();
+                
                 if (result.review) {
                     populateForm(result.review);
                 }
             } catch (e) {
-                console.error(e);
+                console.error('Error loading review:', e);
             }
         }
         
