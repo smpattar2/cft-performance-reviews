@@ -890,9 +890,9 @@
             document.getElementById('dateOfJoining').value = data[5] || '';
             document.getElementById('reportingManager').value = data[6] || '';
             
-            // Self ratings (columns 9-18)
+            // Self ratings (columns 10-19 in sheet = index 10-19 in array)
             for (let i = 1; i <= 10; i++) {
-                const val = data[7 + i];
+                const val = data[9 + i];
                 const sel = document.getElementById('selfRating' + i);
                 if (sel) {
                     sel.value = val || '';
@@ -903,9 +903,9 @@
                 }
             }
             
-            // TL ratings (columns 29-38)
+            // TL ratings (columns 20-29)
             for (let i = 1; i <= 10; i++) {
-                const val = data[28 + i];
+                const val = data[20 + i];
                 const sel = document.getElementById('tlRating' + i);
                 if (sel) {
                     sel.value = val || '';
@@ -916,9 +916,9 @@
                 }
             }
             
-            // Mgmt ratings (columns 49-58)
+            // Mgmt ratings (columns 40-49)
             for (let i = 1; i <= 10; i++) {
-                const val = data[48 + i];
+                const val = data[40 + i];
                 const sel = document.getElementById('mgmtRating' + i);
                 if (sel) {
                     sel.value = val || '';
@@ -929,23 +929,23 @@
                 }
             }
             
-            // Text fields - Self (columns 19-27)
+            // Text fields - Self (columns 20-29)
             TEXT_FIELDS.forEach((f, idx) => {
-                const val = data[18 + idx];
+                const val = data[20 + idx];
                 const el = document.getElementById('self' + capitalize(f.key));
                 if (el) el.value = val || '';
             });
             
-            // Text fields - TL (columns 39-47)
+            // Text fields - TL (columns 30-39)
             TEXT_FIELDS.forEach((f, idx) => {
-                const val = data[38 + idx];
+                const val = data[30 + idx];
                 const el = document.getElementById('tl' + capitalize(f.key));
                 if (el) el.value = val || '';
             });
             
-            // Text fields - Mgmt (columns 59-67)
+            // Text fields - Mgmt (columns 50-59)
             TEXT_FIELDS.forEach((f, idx) => {
-                const val = data[58 + idx];
+                const val = data[50 + idx];
                 const el = document.getElementById('mgmt' + capitalize(f.key));
                 if (el) el.value = val || '';
             });
